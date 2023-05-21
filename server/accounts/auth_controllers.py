@@ -62,7 +62,7 @@ def login(request: Request, payload: LoginSchema):
 
 @router.post("/registration/", response_model=GenericResponseSchema, status_code=status.HTTP_201_CREATED)
 def registration(request: Request, payload: RegistrationSchema):
-    # TODO: check if user with this email already exists?
+    # check if user with this email already exists?
     user = db.session.query(User).filter(
         User.email == payload.email
     ).first()
@@ -71,18 +71,18 @@ def registration(request: Request, payload: RegistrationSchema):
     if user:
         return JSONResponse({"details": "user with this email already exists!"}, status_code=status.HTTP_400_BAD_REQUEST)
 
-    # TODO: check for password strength
+    # check for password strength
     if len(payload.password1) <= 6:
         return JSONResponse({"details": "password is weak!"}, status_code=status.HTTP_400_BAD_REQUEST)
     if payload.password1 != payload.password2:
         return JSONResponse({"details": "the two passwords didn't matched!"}, status_code=status.HTTP_400_BAD_REQUEST)
 
-    # TODO: create password hash
+    # create password hash
     password_hash = hash_password(payload.password1)
     payload.password1 = password_hash
     payload.password2 = password_hash
 
-    # TODO: save user instance to DB
+    # save user instance to DB
     user = User(
         email=payload.email,
         first_name=payload.first_name,
@@ -92,7 +92,7 @@ def registration(request: Request, payload: RegistrationSchema):
     db.session.add(user)
     db.session.commit()
 
-    # TODO: create a default bank account
+    # create a default bank account
     bank_account = db.session.add(BankAccount(
         user_id=user.id
     ))

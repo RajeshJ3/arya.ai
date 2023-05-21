@@ -11,7 +11,7 @@ from starlette import status
 from server.bank.schemas.request_schemas import EntrySchema, TransferSchema
 
 # models
-from server.models import BankAccount, Entry, Transfer
+from server.models import BankAccount, Entry, Transfer, Statement
 
 from datetime import datetime
 
@@ -50,12 +50,41 @@ def get_a_bank_account(request: Request, account_id: str):
 
 @router.get("/accounts/{account_id}/statements/")
 def get_account_statements(request: Request, account_id: str):
-    return {}
+    user_id = request.state.user_id
+
+    bank = db.session.query(BankAccount).filter(
+        BankAccount.id == account_id,
+        BankAccount.user_id == user_id
+    ).first()
+    if not bank:
+        return JSONResponse({
+            "details": "pass a valid bank account_id"
+        }, status_code=status.HTTP_404_NOT_FOUND)
+
+    statements = db.session.query(Statement).filter(
+        Statement.bank_account_id == account_id
+    ).all()
+    return [statement.dict() for statement in statements]
 
 
 @router.get("/accounts/{account_id}/statements/{statement_id}/")
 def get_an_account_statement(request: Request, account_id: str, statement_id: str):
-    return {}
+    user_id = request.state.user_id
+
+    bank = db.session.query(BankAccount).filter(
+        BankAccount.id == account_id,
+        BankAccount.user_id == user_id
+    ).first()
+    if not bank:
+        return JSONResponse({
+            "details": "pass a valid bank account_id"
+        }, status_code=status.HTTP_404_NOT_FOUND)
+
+    statement = db.session.query(Statement).filter(
+        Statement.bank_account_id == account_id,
+        Statement.id == statement_id
+    ).first()
+    return statement.dict()
 
 
 @router.get("/accounts/{account_id}/entries/")
@@ -119,7 +148,7 @@ def withdraw_amount(request: Request, account_id: str, payload: EntrySchema):
             "details": "pass a valid bank account_id"
         }, status_code=status.HTTP_404_NOT_FOUND)
 
-    # TODO: check for balance availability
+    # check for balance availability
     if bank.amount < payload.amount:
         return JSONResponse({
             "details": "insufficient balance"
@@ -153,7 +182,7 @@ def transfer_amount(request: Request, account_id: str, destination_account_id: s
             "details": "pass a valid bank account_id"
         }, status_code=status.HTTP_404_NOT_FOUND)
 
-    # TODO: check for balance availability
+    # check for balance availability
     if source_bank.amount < payload.amount:
         return JSONResponse({
             "details": "insufficient balance"
@@ -177,12 +206,12 @@ def transfer_amount(request: Request, account_id: str, destination_account_id: s
     db.session.add(transfer)
     db.session.commit()
 
-    # TODO: decrease amount in source_bank
+    # decrease amount in source_bank
     source_bank.amount = source_bank.amount - payload.amount
     db.session.add(source_bank)
     db.session.commit()
 
-    # TODO: increase amount in destination_bank
+    # increase amount in destination_bank
     destination_bank.amount = destination_bank.amount + payload.amount
     db.session.add(destination_bank)
     db.session.commit()

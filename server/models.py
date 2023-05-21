@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, String, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, String, DateTime, JSON
 from sqlalchemy.orm import declarative_base, relationship
 
 from fastapi_sqlalchemy import db
@@ -35,8 +35,7 @@ class BankAccount(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     entries = relationship("Entry")
-    # transfers = relationship("Transfer")
-    # statements = relationship("Statement")
+    statements = relationship("Statement")
 
     def dict(self):
         credits = db.session.query(Transfer).filter(
@@ -53,7 +52,7 @@ class BankAccount(Base):
             "entries": self.entries,
             "credits": credits,
             "debits": debits,
-            # "statements": self.statements,
+            "statements": self.statements,
         }
 
 
@@ -73,7 +72,7 @@ class Entry(Base):
         "amount": self.amount,
         "entry_type": self.entry_type,
         "bank_account_id": self.bank_account_id,
-        "created_at": self.created_at,
+        "created_at": int(self.created_at.timestamp()),
     }
 
 
@@ -108,25 +107,28 @@ class Transfer(Base):
         "amount": self.amount,
         "source_bank_account_id": self.source_bank_account_id,
         "destination_bank_account_id": self.destination_bank_account_id,
-        "created_at": self.created_at,
+        "created_at": int(self.created_at.timestamp()),
     }
 
 
-# class Statement(Base):
-#     __tablename__ = "statements"
+class Statement(Base):
+    __tablename__ = "statements"
 
-#     id = Column(Integer, primary_key=True, index=True)
-#     month = Column(Integer, nullable=False)
-#     year = Column(Integer, nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    month = Column(Integer, nullable=False)
+    year = Column(Integer, nullable=False)
 
-#     bank_account_id = Column(Integer, ForeignKey("bank_accounts.id"))
+    json_data = Column(JSON, nullable=False, default={})
 
-#     created_at = Column(DateTime, nullable=False)
+    bank_account_id = Column(Integer, ForeignKey("bank_accounts.id"))
 
-#     def dict(self): return {
-#         "id": self.id,
-#         "month": self.month,
-#         "year": self.year,
-#         "bank_account_id": self.bank_account_id,
-#         "created_at": self.created_at,
-#     }
+    created_at = Column(DateTime, nullable=False)
+
+    def dict(self): return {
+        "id": self.id,
+        "month": self.month,
+        "year": self.year,
+        "json_data": self.json_data,
+        "bank_account_id": self.bank_account_id,
+        "created_at": int(self.created_at.timestamp()),
+    }
