@@ -6,6 +6,7 @@ from uvicorn import run
 from server.accounts import auth_controllers
 from server.accounts import account_controllers
 from server.bank import controllers as bank_controllers
+from server.debug import debug_controllers
 
 # custom
 from server.core.middlewares.auth_middlewares import AuthorizeRequestMiddleware
@@ -22,6 +23,7 @@ app.add_middleware(AuthorizeRequestMiddleware)
 app.include_router(auth_controllers.router)
 app.include_router(account_controllers.router)
 app.include_router(bank_controllers.router)
+app.include_router(debug_controllers.router)
 
 
 @app.get("/")

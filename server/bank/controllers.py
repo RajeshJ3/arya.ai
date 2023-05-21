@@ -24,7 +24,6 @@ router = APIRouter(
     },
 )
 
-
 @router.get("/accounts/")
 def get_bank_accounts(request: Request):
     user_id = request.state.user_id

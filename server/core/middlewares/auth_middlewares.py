@@ -5,7 +5,8 @@ from starlette.requests import Request
 from starlette import status
 
 # custom
-from server.utils.helpers import is_auth_path, decode_and_validate_token
+from server.utils.helpers import is_path, decode_and_validate_token
+
 
 class AuthorizeRequestMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -13,7 +14,7 @@ class AuthorizeRequestMiddleware(BaseHTTPMiddleware):
             "/",
             "/docs",
             "/openapi.json"
-        ] or is_auth_path(request.url.path):
+        ] or is_path(request.url.path, "auth") or is_path(request.url.path, "debug"):
             return await call_next(request)
 
         if request.method == "OPTIONS":

@@ -15,10 +15,10 @@ import hashlib
 import jwt
 
 
-def is_auth_path(path: str) -> bool:
+def is_path(path: str, path_var) -> bool:
     try:
-        auth = path.split("/")[1]
-        return auth == "auth"
+        path_var_name = path.split("/")[1]
+        return path_var_name == path_var
     except:
         return False
 

@@ -1,5 +1,6 @@
-# fastapi
-from fastapi_sqlalchemy import db
+# sqlalchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # celery
 from celery import Celery
@@ -14,31 +15,36 @@ from server.models import BankAccount, Entry, Transfer, Statement
 # custom
 from server.core.settings import (
     BROKER_URL,
-    TIMEZONE
+    TIMEZONE,
+    DATABASE_URL
 )
+
+session_maker = sessionmaker(bind=create_engine(DATABASE_URL))
 
 celery = Celery("tasks", broker=BROKER_URL)
 celery.conf.timezone = TIMEZONE
 
 
 def generate_and_save_statement(account_id: int):
+    session = session_maker()    
+
     # fetch bank
-    bank = db.session.query(BankAccount).filter(
+    bank = session.query(BankAccount).filter(
         BankAccount.id == account_id
     ).first()
 
     # fetch all transactions
-    entries = db.session.query(Entry).filter(
+    entries = session.query(Entry).filter(
         Entry.bank_account_id == account_id
     ).all()
 
     # fetch all credits
-    credits = db.session.query(Transfer).filter(
+    credits = session.query(Transfer).filter(
         Transfer.destination_bank_account_id == account_id
     ).all()
 
     # fetch all debits
-    debits = db.session.query(Transfer).filter(
+    debits = session.query(Transfer).filter(
         Transfer.source_bank_account_id == account_id
     ).all()
 
@@ -65,8 +71,10 @@ def generate_and_save_statement(account_id: int):
         bank_account_id=int(account_id),
         created_at=datetime.utcnow()
     )
-    db.session.add(statement)
-    db.session.commit()
+    session.add(statement)
+    session.commit()
+
+    session.close()
 
 
 @celery.on_after_configure.connect
@@ -84,7 +92,8 @@ def triger_monthly_statement_generation():
     print("[triger_monthly_statement_generation] Task started")
 
     # fetch all banks
-    banks = db.session.query(BankAccount).all()
+    with session_maker() as session:
+        banks = session.query(BankAccount).all()
 
     # NOTE: this can be done better, by scheduling jobs for the bank accounts in batch.
     # generate statement for each bank account

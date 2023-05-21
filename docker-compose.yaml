@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  server:
+    build: .
+    command: sh -c "alembic upgrade heads && uvicorn server.main:app --reload --port=8000 --host=0.0.0.0"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
+    restart: "on-failure"
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:14-alpine
+    env_file:
+      - .env
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+    restart: "on-failure"
+
+  redis:
+    image: redis:alpine
+    restart: "on-failure"
+
+  worker:
+    build: .
+    command: celery -A server.task.celery worker --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - server
+    restart: "on-failure"
+
+  celery_beat:
+    build: .
+    command: celery -A server.task.celery beat --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - server
+    restart: "on-failure"

@@ -1,9 +1,11 @@
 from datetime import timedelta
+from os import environ as env
 
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+SECRET_KEY = env["SECRET_KEY"]
 
-DATABASE_URL = "sqlite:///sqlite.db"
-BROKER_URL = "redis://localhost:6379/0"
+DATABASE_URL = env["DATABASE_URL"]
+
+BROKER_URL = env["BROKER_URL"]
 
 TIMEZONE = "Asia/Kolkata"
 
